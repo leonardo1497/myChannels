@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+  body,html, .container{
+    height: 100%;
+    overflow: hidden;
+  }
+  #div_msj{
+    height: calc(100% - 100px);
+    overflow-y: auto;
+  }
+</style>
+  <div id="chat" class="container">
+    <div id="div_msj">
+    </div>
+      <input type="text" name="" id="message" class="form-control">
+      <input type="submit" value="Enviar" id="btn_message" class="mt-1 btn btn-success">
+  </div>
+
+  <script>
+    window.onload = function(){
+
+      var user = "{{ request.user }}"
+
+      document.querySelector("#btn_message").addEventListener("click",sendMsj)
+      document.querySelector("#message").addEventListener("keypress",function(e){
+        if(e.keyCode == 13){
+          sendMsj()
+        }
+      })
+      
+      function sendMsj(){
+        message = document.querySelector("#message")
+        if(message.value.trim() !== ""){
+          chatSocket.send(JSON.stringify({'message' : message.value.trim()}));
+          message.value = ""
+        }
+      }
+      var url = 'ws://'+window.location.host+'/ws/alert/room/{{room.id}}'
+
+      var chatSocket = new  WebSocket(url)
+
+
+      chatSocket.onopen = function(e){
+        console.log("WS abierto")
+        //chatSocket.send(JSON.stringify({'message' : "Hola mundo socket"}));
+      }
+
+      chatSocket.onmessage = function(data){
+        
+        var data = JSON.parse(data.data)
+        msj = data.message
+        datetime = data.datetime
+        username = data.username
+        var customClassMsj = "alert-success mr-5"
+        if(user != username){
+          customClassMsj = "alert-warning ml-5"
+        }
+        document.querySelector("#div_msj").innerHTML +=
+      `<div class="alert ${customClassMsj} pb-1">
+          ${msj}
+          <div>
+            <small class="font-italic">${username}</small>
+            <small class="float-right">${datetime}</small>
+          </div>
+        </div>`
+      }
+
+      chatSocket.onclose = function(e){
+        console.log("Cerrada la conexión")
+      }
+
+    }
+  </script>
+{% endblock %}
